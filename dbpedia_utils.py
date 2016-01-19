@@ -1,9 +1,14 @@
 from __future__ import print_function, unicode_literals
 import regex as re
-from urllib import unquote
 import datetime
 import json
 import bz2file
+import sys
+
+try:
+    from urllib import unquote
+except ImportError:
+    from urllib.parse import unquote
 
 # n-triples
 parser = re.compile(r'<(.+)>\s<(.+)>\s(.+)\s\.+')
@@ -15,14 +20,21 @@ value_patterns = [
     re.compile(r'<(.+)>'),
 ]
 
-def to_unicode_or_bust(obj, encoding='utf-8'):
-    """
-    From http://farmdev.com/talks/unicode/
-    """
-    if isinstance(obj, basestring):
-        if not isinstance(obj, unicode):
-            obj = unicode(obj, encoding)
-    return obj
+if sys.version_info[0] == 2:
+    PY2 = True
+
+    def to_unicode_or_bust(obj, encoding='utf-8'):
+        """
+        From http://farmdev.com/talks/unicode/
+        """
+        if isinstance(obj, basestring):
+            if not isinstance(obj, unicode):
+                obj = unicode(obj, encoding)
+        return obj
+else:
+    PY2 = False
+    to_unicode_or_bust = lambda x: str(x)
+
 
 def iter_entities_from(filename):
     """
@@ -31,7 +43,7 @@ def iter_entities_from(filename):
     """
     print('reading', filename)
 
-    with bz2file.open(filename, 'r') as dump:
+    with bz2file.open(filename, 'rt') as dump:
         prev_resource = None
         values = None
 
@@ -70,12 +82,12 @@ def iter_entities_from(filename):
             yield values
     
 
-
 def parse_attrib(uri):
     parts = uri.split('/')
     name = unquote(parts[-1])
     name = name.replace('_', ' ')
     return to_unicode_or_bust(name)
+
 
 def get_parts(line):
     parts = parser.match(line)
@@ -93,8 +105,8 @@ def get_parts(line):
         if match_string != None:
             obj = match_string.group(1)
             break
-        
-    if obj:
+
+    if PY2 and obj:
         obj = unicode(obj.decode('unicode-escape', errors='ignore'))
     
     return {'resource': resource, 'subject': subject, 'predicate': predicate, 'object': obj}

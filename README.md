@@ -1,6 +1,8 @@
 # DBpedia Utils
 
-This small Python module contains a set of utility functions to work with DBpedia data.
+This small Python module contains a set of utility functions to work with DBpedia data. It works with Python 2.7 and 3.4.
+
+You require the following modules: `regex`, `bz2file`.
 
 Basically, the important function is `iter_entities_from`. It works like this:
 
